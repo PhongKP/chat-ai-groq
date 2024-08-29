@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with bot Phong</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="chat-container">
+        <button id="theme-toggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        // Thay thế 'YOUR_GROQ_API_KEY' bằng API key thực của bạn
+        const GROQ_API_KEY = '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';
+
+        let conversationHistory = [];
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+            messageDiv.textContent = content;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                addMessage(message, true);
+                userInput.value = '';
+
+                conversationHistory.push({ role: "user", content: message });
+
+                try {
+                    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+                        model: 'llama-3.1-70b-versatile',
+                        messages: conversationHistory,
+                        max_tokens: 1000,
+                        temperature: 0.7
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${GROQ_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const botReply = response.data.choices[0].message.content.trim();
+                    conversationHistory.push({ role: "assistant", content: botReply });
+                    addMessage(botReply);
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('Sorry, there was an error processing your request.');
+                }
+            }
+        }
+
+        // Chuyển đổi giữa chế độ sáng và tối
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', toggleDarkMode);
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const icon = themeToggle.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        }
+    </script>
+</body>
+
+</html>
